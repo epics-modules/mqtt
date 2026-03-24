@@ -258,7 +258,13 @@ void MqttDriver::onMessageCb(Autoparam::Driver* driver, const std::string& topic
     if (addr.format == MqttTopicAddr::JSON) {
       try {
         json root = json::parse(payload);
-        val = to_string(root.at(json::json_pointer(addr.jsonField)));
+        auto jsonVal = root.at(json::json_pointer(addr.jsonField));
+        val = jsonVal.is_string() ? jsonVal.get<std::string>() : to_string(jsonVal);
+      }
+      catch (const json::out_of_range& e) {
+        // there can be multiple records pointing to same topic
+        // topicName is not enough to differentiate (json pointer may differ)
+        continue;
       }
       catch (const std::exception& e) {
         asynPrint(pself->pasynUserSelf, ASYN_TRACE_ERROR,
@@ -557,8 +563,8 @@ WriteResult MqttDriver::integerWrite(DeviceVariable& deviceVar, epicsInt32 value
       status = asynSuccess;
     }
     else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
-      // TODO: implement JSON support for integer values
-      throw std::logic_error("JSON support not implemented");
+      driver->mqttClient.publish(addr.topicName, to_string(value));
+      status = asynSuccess;
     }
   }
   catch (const std::exception& exc) {
@@ -599,8 +605,8 @@ WriteResult MqttDriver::digitalWrite(DeviceVariable& deviceVar, epicsUInt32 cons
       status = asynSuccess;
     }
     else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
-      // TODO: implement JSON support for digital values
-      throw std::logic_error("JSON support not implemented");
+      driver->mqttClient.publish(addr.topicName, to_string(value));
+      status = asynSuccess;
     }
   }
   catch (const std::exception& exc) {
@@ -626,8 +632,8 @@ WriteResult MqttDriver::floatWrite(DeviceVariable& deviceVar, epicsFloat64 value
       status = asynSuccess;
     }
     else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
-      // TODO: implement JSON support for float values
-      throw std::logic_error("JSON support not implemented");
+      driver->mqttClient.publish(addr.topicName, to_string(value));
+      status = asynSuccess;
     }
   }
   catch (const std::exception& exc) {
@@ -649,10 +655,9 @@ WriteResult MqttDriver::arrayWrite(DeviceVariable& deviceVar, Array<epicsDataTyp
   std::string topicName = addr.topicName;
   MqttDriver* driver = static_cast<MqttTopicVariable&>(deviceVar).driver;
   try {
+    const epicsDataType* arrayData = reinterpret_cast<const epicsDataType*>(value.data());
+    size_t count = value.size();
     if (addr.format == MqttTopicAddr::TopicFormat::FLAT) {
-      const epicsDataType* arrayData = reinterpret_cast<const epicsDataType*>(value.data());
-      size_t count = value.size();
-
       std::ostringstream oss;
       for (size_t i = 0; i < count; ++i) {
         if (i > 0) oss << ",";
@@ -662,8 +667,12 @@ WriteResult MqttDriver::arrayWrite(DeviceVariable& deviceVar, Array<epicsDataTyp
       status = asynSuccess;
     }
     else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
-      // TODO: implement JSON support for array values
-      throw std::logic_error("JSON support not implemented");
+      json data = json::array();
+      for (size_t i = 0; i < count; ++i) {
+        data.push_back(arrayData[i]);
+      }
+      driver->mqttClient.publish(addr.topicName, data.dump());
+      status = asynSuccess;
     }
   }
   catch (const std::exception& exc) {
@@ -683,17 +692,16 @@ WriteResult MqttDriver::stringWrite(DeviceVariable& deviceVar, Octet const& valu
   MqttTopicAddr const& addr = static_cast<MqttTopicAddr const&>(deviceVar.address());
   std::string topicName = addr.topicName;
   MqttDriver* driver = static_cast<MqttTopicVariable&>(deviceVar).driver;
+  std::vector<char> stringData(value.maxSize());
+  value.writeTo(stringData.data(), stringData.size());
   try {
     if (addr.format == MqttTopicAddr::TopicFormat::FLAT) {
-      std::vector<char> stringData(value.maxSize());
-      if (value.writeTo(stringData.data(), stringData.size())) {
-        driver->mqttClient.publish(addr.topicName, stringData.data());
-        status = asynSuccess;
-      }
-    }
-    else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
-      // TODO: implement JSON support for string values
-      throw std::logic_error("JSON support not implemented");
+      driver->mqttClient.publish(addr.topicName, stringData.data());
+      status = asynSuccess;
+    } else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
+      json j = std::string(stringData.data());
+      driver->mqttClient.publish(addr.topicName, j.dump());
+      status = asynSuccess;
     }
   }
   catch (const std::exception& exc) {
