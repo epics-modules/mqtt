@@ -563,6 +563,8 @@ WriteResult MqttDriver::integerWrite(DeviceVariable& deviceVar, epicsInt32 value
       status = asynSuccess;
     }
     else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
+      // TODO: Compose JSON from driver instead of publishing a plain JSON scalar.
+      // See https://github.com/epics-modules/mqtt/issues/14
       driver->mqttClient.publish(addr.topicName, to_string(value));
       status = asynSuccess;
     }
@@ -605,6 +607,8 @@ WriteResult MqttDriver::digitalWrite(DeviceVariable& deviceVar, epicsUInt32 cons
       status = asynSuccess;
     }
     else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
+      // TODO: Compose JSON from driver instead of publishing a plain JSON scalar.
+      // See https://github.com/epics-modules/mqtt/issues/14
       driver->mqttClient.publish(addr.topicName, to_string(value));
       status = asynSuccess;
     }
@@ -632,6 +636,8 @@ WriteResult MqttDriver::floatWrite(DeviceVariable& deviceVar, epicsFloat64 value
       status = asynSuccess;
     }
     else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
+      // TODO: Compose JSON from driver instead of publishing a plain JSON scalar.
+      // See https://github.com/epics-modules/mqtt/issues/14
       driver->mqttClient.publish(addr.topicName, to_string(value));
       status = asynSuccess;
     }
@@ -667,6 +673,8 @@ WriteResult MqttDriver::arrayWrite(DeviceVariable& deviceVar, Array<epicsDataTyp
       status = asynSuccess;
     }
     else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
+      // TODO: Compose JSON from driver instead of publishing a plain JSON scalar.
+      // See https://github.com/epics-modules/mqtt/issues/14
       json data = json::array();
       for (size_t i = 0; i < count; ++i) {
         data.push_back(arrayData[i]);
@@ -699,6 +707,8 @@ WriteResult MqttDriver::stringWrite(DeviceVariable& deviceVar, Octet const& valu
       driver->mqttClient.publish(addr.topicName, stringData.data());
       status = asynSuccess;
     } else if (addr.format == MqttTopicAddr::TopicFormat::JSON) {
+      // TODO: Compose JSON from driver instead of publishing a plain JSON scalar.
+      // See https://github.com/epics-modules/mqtt/issues/14
       json j = std::string(stringData.data());
       driver->mqttClient.publish(addr.topicName, j.dump());
       status = asynSuccess;
