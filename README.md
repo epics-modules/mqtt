@@ -22,7 +22,7 @@ Contributions are welcome - feel free to open issues and pull requests!
 
 - Auto-update of EPICS PVS via `I/O Intr` records;
 - Support for read/write flat MQTT topics (i.e, topics where the payload is a single value or array);
-- Support for reading arbitrarily nested fields from JSON topic payloads;
+- Support for reading JSON payloads;
 - Support for MQTT QoS levels;
 - Checks and reject invalid messages (based mostly on type-checking);
 - Auto reconnection of broker;
@@ -117,7 +117,7 @@ Where:
 - `<FORMAT>` is the format of the payload: `FLAT` or `JSON`.
 - `<TYPE>` is the general type of the expected value [`INT|FLOAT|DIGITAL|STRING|INTARRAY|FLOATARRAY`].
 - `<TOPIC>` is the MQTT topic to which the record will be subscribed/published.
-- `<FIELD>` is the dot-separated path to the field to extract from a JSON payload (e.g. `sensor.temperature`). Arbitrary nesting is supported. Required when `FORMAT` is `JSON`.
+- `<FIELD>` is JSON pointer to extract value from a JSON payload (e.g. `/sensor/temperature`). If empty, JSON root is used.
 
 > **Note on JSON write support:** Writing to JSON-formatted topics is currently **not supported**. At the moment the driver has no way of knowing the JSON structure expected by the broker ahead of time for write records. For this reason, only `FLAT` format can be used for output records.
 
