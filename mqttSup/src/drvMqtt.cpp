@@ -73,23 +73,25 @@ DeviceAddress* MqttDriver::parseDeviceAddress(std::string const& function, std::
   }
   else if (prefix == JSON_FUNC_PREFIX) {
     auto spacePos = arguments.find(' ');
+    std::string topicName;
+    std::string jsonField;
     if (spacePos == std::string::npos) {
-      fprintf(stderr, "%s::%s: JSON field not specified: %s\n", driverName, functionName, arguments.c_str());
-      delete addr;
-      return nullptr;
+      topicName = arguments;
+      jsonField = "";
+    } else {
+      if (spacePos + 1 >= arguments.size()) {
+        fprintf(stderr, "%s::%s: JSON field is empty: %s\n", driverName, functionName, arguments.c_str());
+        delete addr;
+        return nullptr;
+      }
+      topicName = arguments.substr(0, spacePos);
+      jsonField = arguments.substr(spacePos + 1, arguments.size());
     }
-    if (spacePos + 1 >= arguments.size()) {
-      fprintf(stderr, "%s::%s: JSON field is empty: %s\n", driverName, functionName, arguments.c_str());
-      delete addr;
-      return nullptr;
-    }
-    std::string topicName = arguments.substr(0, spacePos);
     if (!isValidTopicName(topicName)) {
       fprintf(stderr, "%s::%s: Invalid topic name: %s\n", driverName, functionName, topicName.c_str());
       delete addr;
       return nullptr;
     }
-    std::string jsonField = arguments.substr(spacePos + 1, arguments.size());
     addr->format = MqttTopicAddr::JSON;
     addr->topicName = topicName;
     addr->jsonField = jsonField;
@@ -256,13 +258,7 @@ void MqttDriver::onMessageCb(Autoparam::Driver* driver, const std::string& topic
     if (addr.format == MqttTopicAddr::JSON) {
       try {
         json root = json::parse(payload);
-        const json* fieldAddr = findJsonField(root, addr.jsonField);
-        if (!fieldAddr || fieldAddr->is_null())
-          throw std::invalid_argument("JSON field not found: " + addr.jsonField);
-        if (fieldAddr->is_string())
-          val = fieldAddr->get<std::string>();
-        else
-          val = fieldAddr->dump();
+        val = to_string(root.at(json::json_pointer(addr.jsonField)));
       }
       catch (const std::exception& e) {
         asynPrint(pself->pasynUserSelf, ASYN_TRACE_ERROR,
@@ -335,28 +331,6 @@ void MqttDriver::onMessageCb(Autoparam::Driver* driver, const std::string& topic
 }
 //#############################################################################################
 // Helper methods
-
-// Recursively search for a key anywhere in the JSON structure
-const json* MqttDriver::findJsonField(const json& payload, const std::string& targetKey) {
-  if (payload.is_object()) {
-    for (auto it = payload.begin(); it != payload.end(); ++it) {
-      if (it.key() == targetKey) {
-        return &it.value();
-      }
-      else {
-        const json* found = findJsonField(it.value(), targetKey);
-        if (found) return found;
-      }
-    }
-  }
-  else if (payload.is_array()) {
-    for (const auto& el : payload) {
-      const json* found = findJsonField(el, targetKey);
-      if (found) return found;
-    }
-  }
-  return nullptr;
-}
 
 /* Checks if a string corresponds to one of the supported topic types */
 bool MqttDriver::isSupportedTopicType(const std::string& type) {
