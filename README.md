@@ -58,9 +58,9 @@ device support. For now, the supported interfaces are the following:
      [these](https://github.com/eclipse-paho/paho.mqtt.cpp?tab=readme-ov-file#build-the-paho-c-and-paho-c-libraries-together)
      instructions.
 
-  > Note: AutoparamDriver explicitly requires EPICS >= 7.0, see 
-  > [reference](https://github.com/Cosylab/autoparamDriver/blob/main/autoparamDriverSup/src/Makefile#L15). For this reason,
-  > this module requires EPICS 7.0 or later to be built and used.
+> Note: AutoparamDriver explicitly requires EPICS >= 7.0, see
+> [reference](https://github.com/Cosylab/autoparamDriver/blob/main/autoparamDriverSup/src/Makefile#L15). For this
+> reason, this module requires EPICS 7.0 or later to be built and used.
 
 2. Clone this repository:
 
@@ -117,9 +117,12 @@ Where:
 - `<FORMAT>` is the format of the payload: `FLAT` or `JSON`.
 - `<TYPE>` is the general type of the expected value [`INT|FLOAT|DIGITAL|STRING|INTARRAY|FLOATARRAY`].
 - `<TOPIC>` is the MQTT topic to which the record will be subscribed/published.
-- `<FIELD>` is JSON pointer to extract value from a JSON payload (e.g. `/sensor/temperature`). If empty, JSON root is used.
+- `<FIELD>` is JSON pointer to extract value from a JSON payload (e.g. `/sensor/temperature`). If empty, JSON root is
+  used.
 
-> **Note on JSON write support:** Writing to JSON-formatted topics is currently **not supported**. At the moment the driver has no way of knowing the JSON structure expected by the broker ahead of time for write records. For this reason, only `FLAT` format can be used for output records.
+> **Note on JSON write:** JSON write currently publishes the record value as a plain JSON scalar/array. Composing JSON
+> objects within the driver is not yet supported (see [#14](https://github.com/epics-modules/mqtt/issues/14)). To write
+> a structured JSON payload, compose it at the application level using a `FLAT:STRING` record and a `scalcout` record.
 
 **Important: Due to the pub/sub nature of MQTT, ALL input records are expected to be `I/O Intr`.**
 
@@ -166,7 +169,6 @@ Example:
 
 Below are the supported interfaces and their implementation status.
 
-
 | Message type        | Asyn Parameter Type                    | `FORMAT:TYPE` string to use | Direction    | Status    |
 | ------------------- | -------------------------------------- | --------------------------- | ------------ | --------- |
 | Integer             | asynInt32                              | `FLAT:INT`                  | Read / Write | Supported |
@@ -175,22 +177,23 @@ Below are the supported interfaces and their implementation status.
 | Strings             | asynOctetRead/asynOctetWrite           | `FLAT:STRING`               | Read / Write | Supported |
 | Integer Array       | asynInt32ArrayIn/asynInt32ArrayOut     | `FLAT:INTARRAY`             | Read / Write | Supported |
 | Float Array         | asynFloat64ArrayIn/asynFloat64ArrayOut | `FLAT:FLOATARRAY`           | Read / Write | Supported |
-| Integer             | asynInt32                              | `JSON:INT`                  | Read only    | Supported |
-| Float               | asynFloat64                            | `JSON:FLOAT`                | Read only    | Supported |
-| Bit masked          | asynUInt32Digital                      | `JSON:DIGITAL`              | Read only    | Supported |
-| String              | asynOctetRead                          | `JSON:STRING`               | Read only    | Supported |
+| Integer             | asynInt32                              | `JSON:INT`                  | Read / Write | Supported |
+| Float               | asynFloat64                            | `JSON:FLOAT`                | Read / Write | Supported |
+| Bit masked          | asynUInt32Digital                      | `JSON:DIGITAL`              | Read / Write | Supported |
+| String              | asynOctetRead/asynOctetWrite           | `JSON:STRING`               | Read / Write | Supported |
+| Integer Array       | asynInt32ArrayIn/asynInt32ArrayOut     | `JSON:INTARRAY`             | Read / Write | Supported |
+| Float Array         | asynFloat64ArrayIn/asynFloat64ArrayOut | `JSON:FLOATARRAY`           | Read / Write | Supported |
 
 ## Licensing Terms
 
 Copyright (C) 2026 André Favoto
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU
-General Public License as published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
+version.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
-even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with this program. If not,
-see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with this program. If not, see
+<https://www.gnu.org/licenses/>.
